@@ -70,7 +70,6 @@
     <script>
       $(function () {
         $("#testForm1").submit(function (e) {
-          // console.log("ahihi---------", $("#testForm1").serialize());
           const formValue = $("#testForm1").serialize().split("&");
           const term = formValue[0].split("=")[1];
           const page = (formValue[1] && formValue[1].split("=")[1]) || 1;
