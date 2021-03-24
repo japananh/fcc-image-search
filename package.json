@@ -21,7 +21,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/japananh/fcc-image-search-abstraction"
+		"url": "https://github.com/japananh/fcc-image-search"
 	},
 	"keywords": [
 		"node",
