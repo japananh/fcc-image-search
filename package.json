@@ -1,0 +1,32 @@
+{
+	"name": "fcc-image-search-abstraction",
+	"version": "0.0.1",
+	"description": "Image search abstraction project for freeCodeCamp",
+	"main": "server.js",
+	"scripts": {
+		"start": "nodemon server.js"
+	},
+	"dependencies": {
+		"axios": "^0.21.1",
+		"body-parser": "^1.15.2",
+		"chai": "^4.2.0",
+		"chai-http": "^4.3.0",
+		"cors": "^2.8.1",
+		"dotenv": "^8.2.0",
+		"express": "^4.14.0",
+		"helmet": "^3.1.0",
+		"mocha": "^3.2.0",
+		"mongoose": "^5.12.0",
+		"nodemon": "^2.0.7"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/japananh/fcc-image-search-abstraction"
+	},
+	"keywords": [
+		"node",
+		"express",
+		"mongoose"
+	],
+	"license": "MIT"
+}
