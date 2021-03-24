@@ -1,34 +1,39 @@
 const mongoose = require("mongoose");
 const { toJSON } = require("./plugins");
 
-// TODO: define schema here
-const sampleSchema = mongoose.Schema(
+const historySchema = mongoose.Schema(
   {
-    stock: {
+    term: {
       type: String,
       required: true,
     },
-    price: {
-      type: Number,
-    },
-    ipLikedList: {
-      type: Array,
+    type: {
+      type: String,
       required: true,
-      default: [],
+    },
+    page: {
+      type: Number,
+      required: true,
+      default: 1,
+    },
+    per_page: {
+      type: Number,
+      required: true,
+      default: 10,
     },
   },
   {
-    timestamps: true,
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
     versionKey: false,
   }
 );
 
 // add plugin that converts mongoose to json
-sampleSchema.plugin(toJSON);
+historySchema.plugin(toJSON);
 
 /**
- * @typedef Library
+ * @typedef History
  */
-const Library = mongoose.model("Stock", sampleSchema);
+const History = mongoose.model("History", historySchema);
 
-module.exports = Library;
+module.exports = History;

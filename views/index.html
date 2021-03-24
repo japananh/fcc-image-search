@@ -18,9 +18,10 @@
       <h1>Image Search</h1>
     </header>
     <div id="userstories" style="margin-left: 5%; margin-top: 5%">
-      <h3>Example usage:</h3>
-      <code>/api/{string}</code><br />
-      <code>/api/{string}?page=10</code><br />
+      <h2>Example usage:</h2>
+      <h3>/api/images/{term}</h3>
+      <code>/api/images/{term}</code><br />
+      <code>/api/images/{term}?page=10</code><br />
       <h3>Example return:</h3>
       <code
         >{"image": [{ "type":"image/jpeg", "width":1920, "height":840, "size":
@@ -29,6 +30,10 @@
         "width": 150, "height": 66 }, "description": "International Cat",
         "parentPage": "https://icatcare.org/" }]}</code
       ><br />
+      <h3>/api/recent</h3>
+      <code>/api/recent</code><br />
+      <h3>Example return:</h3>
+      <code>[{ "term":"cat", "created_at":'']</code><br />
     </div>
     <hr style="margin: 50px" />
     <div id="testui" style="margin-left: 5%">
@@ -63,9 +68,9 @@
       $(function () {
         $("#testForm1").submit(function (e) {
           $.ajax({
-            url: "/api/query",
+            url: "/api/images/",
             type: "get",
-            data: $("#testForm").serialize(),
+            // data: $("#testForm").serialize(),
             success: function (data) {
               $("#jsonResult").text(JSON.stringify(data));
             },
@@ -74,9 +79,9 @@
         });
         $("#testForm2").submit(function (e) {
           $.ajax({
-            url: "/api/history",
+            url: "/api/recent/images",
             type: "get",
-            data: $("#testForm2").serialize(),
+            // data: $("#testForm2").serialize(),
             success: function (data) {
               $("#jsonResult").text(JSON.stringify(data));
             },

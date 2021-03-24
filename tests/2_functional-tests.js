@@ -2,170 +2,175 @@ const chaiHttp = require("chai-http");
 const chai = require("chai");
 const assert = chai.assert;
 const server = require("../server");
+const History = require("../models");
 
 chai.use(chaiHttp);
 
 suite("Functional Tests", function () {
-  suite("Test GET request to /api/${string}", () => {
-    test("Viewing one stock", (done) => {
+  before((done) => {
+    History.collection.drop();
+    done();
+  });
+
+  after((done) => {
+    History.collection.drop();
+    done();
+  });
+
+  suite("Test GET request to /api/images/${term}", () => {
+    const term = `cat-${new Date().getTime()}`;
+    const defaultItemPerPage = 10;
+
+    test("GET request to /api/images/${term} with a default page", (done) => {
       chai
         .request(server)
-        .get("/api/stock-prices")
-        .query({ page: 1 })
+        .get(`/api/images/${term}`)
         .end((_err, res) => {
           assert.equal(res.status, 200);
           assert.isObject(res.body, "response should be an object");
-          assert.isObject(
-            res.body.image,
-            "response should have a property image as an object"
-          );
-          assert.isNumber(
-            res.body.stockData.likes,
-            "stockData should have likes as a number"
-          );
-          assert.isString(
-            res.body.stockData.stock,
-            "stockData should have stock as a string"
-          );
-
-          if (res.body.stockData.price != null) {
-            assert.isNumber(
-              res.body.stockData.price,
-              "stockData should have price as a number"
-            );
-          }
-
-          done();
-        });
-    });
-
-    let likes = 0;
-    const stock = "GOOG";
-
-    test("Viewing one stock and liking it", (done) => {
-      chai
-        .request(server)
-        .get("/api/stock-prices")
-        .query({ stock, like: "true" })
-        .end((_err, res) => {
-          assert.equal(res.status, 200);
-          assert.isObject(res.body, "response should be an object");
-          assert.isObject(
-            res.body.stockData,
-            "response should have a property stockData as an object"
-          );
-          assert.isString(
-            res.body.stockData.stock,
-            "stockData should have stock as a string"
-          );
+          assert.isAtLeast(res.body.total, 0, "total should be at least 0");
           assert.isAtLeast(
-            res.body.stockData.likes,
-            1,
-            "stockData should have likes greater or equal to 1"
+            res.body.total_pages,
+            0,
+            "total_pages should be at least 0"
+          );
+          assert.isArray(
+            res.body.images,
+            "response should have a property images as an array"
+          );
+          assert.isAtMost(
+            res.body.images.length,
+            defaultItemPerPage,
+            `images should have at most ${defaultItemPerPage}`
           );
 
-          likes = res.body.stockData.likes;
-
-          if (res.body.stockData.price != null) {
-            assert.isNumber(
-              res.body.stockData.price,
-              "stockData should have price as a number"
-            );
+          if (res.body.images.length) {
+            res.body.images.forEach((image) => {
+              assert.containsAllKeys(image, [
+                "id",
+                "created_at",
+                "updated_at",
+                "promoted_at",
+                "width",
+                "height",
+                "color",
+                "description",
+                "urls",
+                "categories",
+                "likes",
+              ]);
+            });
           }
 
           done();
         });
     });
 
-    test("Viewing the same stock and liking it again", (done) => {
+    test("GET request to /api/images/${term} with a valid page", (done) => {
       chai
         .request(server)
-        .get("/api/stock-prices")
-        .query({ stock, like: "true" })
+        .get(`/api/images/${term}`)
+        .query({ page: 2 })
         .end((_err, res) => {
           assert.equal(res.status, 200);
           assert.isObject(res.body, "response should be an object");
-          assert.property(
-            res.body,
-            "stockData",
-            "response should have stockData"
+          assert.isAtLeast(res.body.total, 0, "total should be at least 0");
+          assert.isAtLeast(
+            res.body.total_pages,
+            0,
+            "total_pages should be at least 0"
           );
-          assert.isObject(res.body.stockData, "stockData should be an object");
-          assert.containsAllKeys(
-            res.body.stockData,
-            ["stock", "likes"],
-            "stockData should have stock and likes keys"
+          assert.isArray(
+            res.body.images,
+            "response should have a property images as an array"
           );
-          assert.isNumber(
-            res.body.stockData.likes,
-            "stockData should have likes as a number"
+          assert.isAtMost(
+            res.body.images.length,
+            defaultItemPerPage,
+            `images should have at most ${defaultItemPerPage}`
           );
+
+          if (res.body.images.length) {
+            res.body.images.forEach((image) => {
+              assert.containsAllKeys(image, [
+                "id",
+                "created_at",
+                "updated_at",
+                "promoted_at",
+                "width",
+                "height",
+                "color",
+                "description",
+                "urls",
+                "categories",
+                "likes",
+              ]);
+            });
+          }
+
+          done();
+        });
+    });
+
+    test("GET request to /api/images/${term} with an negative page", (done) => {
+      chai
+        .request(server)
+        .get(`/api/images/${term}`)
+        .query({ page: -1 })
+        .end((_err, res) => {
+          assert.equal(res.status, 200);
+          assert.isObject(res.body, "response should be an object");
           assert.equal(
-            res.body.stockData.likes,
-            likes,
-            "stockData should remain the same likes number"
+            res.body.error,
+            "Invalid input",
+            "response should return error"
           );
 
           done();
         });
     });
 
-    test("Viewing two stocks", (done) => {
+    test("GET request to /api/images/${term} with an invalid page", (done) => {
       chai
         .request(server)
-        .get("/api/stock-prices")
-        .query({ stock: ["GOOG", "MSFT"] })
+        .get(`/api/images/${term}`)
+        .query({ page: "1a" })
         .end((_err, res) => {
           assert.equal(res.status, 200);
           assert.isObject(res.body, "response should be an object");
-          assert.isArray(
-            res.body.stockData,
-            "response should have a property stockData as an array"
+          assert.equal(
+            res.body.error,
+            "Invalid input",
+            "response should return error"
           );
-
-          res.body.stockData.forEach((item) => {
-            assert.isObject(item, "stockData should be an array of objects");
-            assert.isString(item.stock, "stock should be a string");
-            assert.equal(
-              item.stock,
-              item.stock.toUpperCase(),
-              "each item in stockData should have stock as uppercase letters"
-            );
-            assert.isNumber(
-              item.rel_likes,
-              "each item in stockData should have rel_likes as a number"
-            );
-          });
 
           done();
         });
     });
+  });
 
-    test("Viewing two stocks and liking them", (done) => {
+  suite("Test GET request to /api/recent", () => {
+    test("Viewing all recent queries", (done) => {
       chai
         .request(server)
-        .get("/api/stock-prices")
-        .query({ stock: ["GOOG", "MSFT"], like: "true" })
+        .get(`/api/recent/images`)
         .end((_err, res) => {
           assert.equal(res.status, 200);
-          assert.isObject(res.body, "response should be an object");
-          assert.isArray(
-            res.body.stockData,
-            "response should have a property stockData as an array"
-          );
+          assert.isArray(res.body, "response should be an array");
 
-          res.body.stockData.forEach((item) => {
-            assert.isObject(item, "stockData should be an array of objects");
-            assert.isNumber(
-              item.rel_likes,
-              "each item in stockData should have rel_likes as a number"
-            );
-            assert.equal(
-              item.stock,
-              item.stock.toUpperCase(),
-              "each item in stockData should have stock is uppercase"
-            );
-          });
+          if (res.body.length) {
+            res.body.forEach((item) => {
+              assert.containsAllKeys(item, [
+                "term",
+                "type",
+                "created_at",
+                "updated_at",
+                "id",
+                "page",
+                "per_page",
+              ]);
+            });
+          }
 
           done();
         });

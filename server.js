@@ -1,4 +1,5 @@
 "use strict";
+
 require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -12,8 +13,6 @@ const runner = require("./test-runner");
 
 const app = express();
 
-app.use("/public", express.static(process.cwd() + "/public"));
-
 app.use(cors({ origin: "*" })); //For FCC testing purposes only
 
 app.use(bodyParser.json());
@@ -24,27 +23,32 @@ app.use(
       directives: {
         styleSrc: [
           "'self'",
-          "https://fcc-stockchecker-app.herokuapp.com/",
-          "https://cloud.iexapis.com/",
+          "'unsafe-inline'",
+          "https://fcc-image-search.herokuapp.com/",
         ],
         scriptSrc: [
           "'self'",
-          "https://fcc-stockchecker-app.herokuapp.com/",
+          "'unsafe-inline'",
+          "https://fcc-image-search.herokuapp.com/",
           "https://cloud.iexapis.com/",
           "https://code.jquery.com/jquery-2.2.1.min.js",
         ],
       },
     },
     xssFilter: true,
+    nocache: true,
+    noSniff: true,
     hidePoweredBy: true,
-    frameguard: {
-      action: "deny",
-    },
+    // frameguard: {
+    //   action: "deny",
+    // },
   })
 );
 
+app.use("/public", express.static(process.cwd() + "/public"));
+
 //Index page (static HTML)
-app.route("/").get(function (req, res) {
+app.route("/").get(function (_req, res) {
   res.sendFile(process.cwd() + "/views/index.html");
 });
 
@@ -82,7 +86,7 @@ mongoose
             console.log("Tests are not valid:");
             console.log(error);
           }
-        }, 3500);
+        }, 1500);
       }
     });
   });

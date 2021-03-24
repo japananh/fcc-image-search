@@ -1,138 +1,80 @@
 "use strict";
 
 const axios = require("axios");
-const Stock = require("../models");
+const History = require("../models");
 
-async function getStockPrice(stock) {
-  const url = `https://cloud.iexapis.com/stable/stock/${stock}/quote/latestPrice?token=${process.env.API_TOKEN}`;
+const defaultPage = 1;
+const itemPerPage = 10;
+
+async function getImagesInfo({
+  term,
+  page = defaultPage,
+  per_page = itemPerPage,
+}) {
+  const url = "https://api.unsplash.com/search/photos";
   try {
-    const result = await axios.get(url);
-    if (result) return result.data;
+    const result = await axios.get(url, {
+      params: {
+        query: term,
+        page,
+        per_page,
+      },
+      headers: {
+        Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`,
+      },
+    });
+    if (result && result.data) return result.data;
     return;
   } catch (error) {
-    console.error("Call api to get price error", JSON.stringify(error));
+    console.error("Call api to get images info error", JSON.stringify(error));
     return;
   }
 }
 
-async function getStock(stock) {
-  const stockData = await Stock.findOne({ stock }).lean();
-  return stockData;
-}
-
-async function updateStock(stock, ip) {
-  const stockData = await Stock.updateOne(
-    { stock },
-    { $push: { ipLikedList: ip } },
-    { new: true }
-  );
-  return stockData;
-}
-
-async function addStock({ stock, price, ipLikedList }) {
-  const stockData = await Stock.create({
-    stock,
-    price,
-    ipLikedList: ipLikedList || [],
-  });
-  return stockData.toJSON();
+async function saveQuery({ term, type }) {
+  return await History.create({ term, type });
 }
 
 module.exports = function (app) {
-  app.route("/api/stock-prices").get(async (req, res) => {
-    const { stock } = req.query;
+  app.route("/api/images/:term").get(async (req, res) => {
+    const { term } = req.params;
 
-    if (!stock) {
-      return res.json({ error: "Missing required(s) field" });
+    let { page } = req.query;
+    if (page == null) page = defaultPage;
+    page = +page;
+    if (!page || page <= 0 || typeof page !== "number") {
+      return res.json({ error: "Invalid input" });
     }
 
-    if (typeof stock !== "string" && typeof stock !== "object") {
-      return res.json({ error: "Invalid stock" });
-    }
+    const images = await getImagesInfo({ term, page });
+    if (!images) return res.json({ total: 0, total_pages: 0, images: [] });
 
-    const like = req.query.like === "true" || req.query.like;
-    const ip = req.ip;
+    const result = await saveQuery({ term, type: "images" });
+    if (!result) return res.json({ error: "Server error" });
 
-    // stock in query is a symbol
-    if (typeof stock === "string") {
-      const stockSymbol = stock.toUpperCase();
+    const imagesInfo = images.results.map((image) => ({
+      id: image.id,
+      created_at: image.created_at,
+      updated_at: image.updated_at,
+      promoted_at: image.promoted_at,
+      width: image.width,
+      height: image.height,
+      color: image.color,
+      description: image.description,
+      urls: image.urls,
+      categories: image.categories,
+      likes: image.likes,
+    }));
 
-      let stockData = await getStock(stockSymbol);
+    res.json({
+      total: images.total,
+      total_pages: images.total_pages,
+      images: imagesInfo,
+    });
+  });
 
-      if (!stockData) {
-        const price = await getStockPrice(stockSymbol);
-
-        stockData = await addStock({
-          stock: stockSymbol,
-          price,
-          ipLikedList: like ? [ip] : [],
-        });
-      } else {
-        if (like && !stockData.ipLikedList.includes(ip)) {
-          const updatedStock = await updateStock(stock, ip);
-          if (updatedStock) stockData.ipLikedList.push(ip);
-        }
-      }
-
-      if (stockData && stockData.ipLikedList) {
-        stockData.likes = stockData.ipLikedList.length;
-      }
-
-      delete stockData.ipLikedList;
-      delete stockData._id;
-
-      return res.json({ stockData });
-    } else {
-      // stock in query is an array of symbols
-      let stockData = [];
-
-      for (let i = 0; i < stock.length; i++) {
-        const stockSymbol = stock[i].toUpperCase();
-
-        let stockInfo = await getStock(stockSymbol);
-
-        if (!stockInfo) {
-          const price = await getStockPrice(stockSymbol);
-
-          const newStock = await addStock({
-            stock: stockSymbol,
-            price,
-            ipLikedList: like ? [ip] : [],
-          });
-
-          stockInfo = { ...newStock };
-        } else {
-          if (like && !stockInfo.ipLikedList.includes(ip)) {
-            const updatedStock = await updateStock(stockSymbol, ip);
-            if (updatedStock) stockInfo.ipLikedList.push(ip);
-          }
-        }
-
-        if (stockInfo.ipLikedList) {
-          stockInfo.likes = stockInfo.ipLikedList.length;
-        }
-
-        delete stockInfo.ipLikedList;
-        delete stockInfo._id;
-
-        stockData.push(stockInfo);
-      }
-
-      if (stockData[0].likes < stockData[1].likes) {
-        stockData[0].rel_likes = -1;
-        stockData[1].rel_likes = 1;
-      } else if (stockData[0].likes > stockData[1].likes) {
-        stockData[0].rel_likes = 1;
-        stockData[1].rel_likes = -1;
-      } else {
-        stockData[0].rel_likes = 0;
-        stockData[1].rel_likes = 0;
-      }
-
-      delete stockData[0].likes;
-      delete stockData[1].likes;
-
-      return res.json({ stockData });
-    }
+  app.route("/api/recent/images").get(async (_req, res) => {
+    const data = await History.find().sort({ created_at: -1 });
+    res.json(data || []);
   });
 };
