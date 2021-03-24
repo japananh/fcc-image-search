@@ -8,7 +8,13 @@ chai.use(chaiHttp);
 
 suite("Functional Tests", function () {
   before((done) => {
-    History.collection.drop();
+    // Handle error when collection does not exist
+    try {
+      History.collection.drop();
+    } catch (err) {
+      console.error(JSON.stringify(err));
+    }
+
     done();
   });
 

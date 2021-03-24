@@ -40,19 +40,22 @@
       <h2 style="text-align: left">Front-End:</h2>
       <h3>Enter a string to search</h3>
       <form id="testForm1" class="border">
+        Term
         <input
           type="text"
-          name="stock"
+          name="term"
           placeholder="cat"
           style="width: 100px"
-          required=""
+          required
         />
-        <input type="number" name="page" value="1" /> Page<br />
+        <br />
+        Page
+        <input type="number" name="page" value="" placeholder="1" />
+        <br />
         <button type="submit">Search</button>
       </form>
       <h3>Get recent query</h3>
       <form id="testForm2" class="border">
-        <input type="number" name="page" value="1" /> Page<br />
         <button type="submit">Get</button>
       </form>
       <code id="jsonResult"></code>
@@ -67,10 +70,14 @@
     <script>
       $(function () {
         $("#testForm1").submit(function (e) {
+          // console.log("ahihi---------", $("#testForm1").serialize());
+          const formValue = $("#testForm1").serialize().split("&");
+          const term = formValue[0].split("=")[1];
+          const page = (formValue[1] && formValue[1].split("=")[1]) || 1;
           $.ajax({
-            url: "/api/images/",
+            url: `/api/images/${term}`,
             type: "get",
-            // data: $("#testForm").serialize(),
+            data: `page=${page}`,
             success: function (data) {
               $("#jsonResult").text(JSON.stringify(data));
             },
@@ -81,7 +88,6 @@
           $.ajax({
             url: "/api/recent/images",
             type: "get",
-            // data: $("#testForm2").serialize(),
             success: function (data) {
               $("#jsonResult").text(JSON.stringify(data));
             },
